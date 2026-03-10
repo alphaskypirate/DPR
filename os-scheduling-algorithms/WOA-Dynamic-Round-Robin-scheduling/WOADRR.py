@@ -110,7 +110,7 @@ def fitness_assignment(assignment, tasks, num_processors, quantums):
     avg_waits = [rr_schedule(queue, quantums[idx]) for idx, queue in enumerate(processor_queues) if queue]
     return max(avg_waits) if avg_waits else float('inf')
 
-def woa_optimize_assignment_quantum(tasks, num_processors=2, quantum_min=1, quantum_max=5, population_size=10, max_iter=30, random_seed=None, verbose=False):
+def woa_optimize_assignment_quantum(tasks, num_processors=1, quantum_min=1, quantum_max=5, population_size=10, max_iter=10, random_seed=None, verbose=False):
     n = len(tasks)
     if random_seed is not None:
         np.random.seed(random_seed)

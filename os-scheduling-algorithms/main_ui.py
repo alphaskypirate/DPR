@@ -13,13 +13,11 @@ sys.path.append(os.path.relpath("Round-Robin-scheduling"))
 sys.path.append(os.path.relpath("Shortest-Job-First-scheduling"))
 sys.path.append(os.path.relpath("WOA-Dynamic-Round-Robin-scheduling"))
 
-from FCFS import simulate_fcfs_algorithm
 from RR import simulate_rr_algorithm
-from SJF_np import simulate_sjf_np_algorithm
-from SJF_p import simulate_sjf_p_algorithm
-from priority_np import simulate_priority_np_algorithm
 from priority_p import simulate_priority_p_algorithm
 from WOADRR import woa_optimize_assignment_quantum, simulate_rr_algorithm
+from Hybrid_RR import simulate_hrr_algorithm
+from RRSJF import simulate_rrsjf_algorithm
 
 
 class tkinterApp(tk.Tk):
@@ -57,7 +55,7 @@ class tkinterApp(tk.Tk):
 
         # iterating through a tuple consisting
         # of the different page layouts
-        for F in (StartPage, FCFS, SJF_np, SJF_p, RR, PriorityNP, PriorityP, Chart, WOADRR):
+        for F in (StartPage, RR, PriorityP, HRR, RRSJF, Chart, WOADRR):
             frame = F(container, self)
 
             # initializing frame of that object from
@@ -84,29 +82,23 @@ class StartPage(tk.Frame):
         label = ttk.Label(self, text="CPU Scheduling algorithms simulator", font=LARGE_FONT)
         label.place(x=0, y=0)
 
-        button1 = ttk.Button(self, text="FCFS", command=lambda: controller.show_frame(FCFS))
-        button1.place(x=50, y=100)
-
-        button2 = ttk.Button(self, text="SJF NP", command=lambda: controller.show_frame(SJF_np))
-        button2.place(x=300, y=100)
-
-        button3 = ttk.Button(self, text="SJF P", command=lambda: controller.show_frame(SJF_p))
-        button3.place(x=50, y=200)
-
         button4 = ttk.Button(self, text="RR", command=lambda: controller.show_frame(RR))
-        button4.place(x=300, y=200)
-
-        button5 = ttk.Button(self, text="Priority NP", command=lambda: controller.show_frame(PriorityNP))
-        button5.place(x=50, y=300)
+        button4.place(x=50, y=100)
 
         button6 = ttk.Button(self, text="Priority P", command=lambda: controller.show_frame(PriorityP))
-        button6.place(x=300, y=300)
+        button6.place(x=50, y=200)
+
+        button9 = ttk.Button(self, text="HRR", command=lambda: controller.show_frame(HRR))
+        button9.place(x=50, y=300)
+
+        button10 = ttk.Button(self, text="RRSJF", command=lambda: controller.show_frame(RRSJF))
+        button10.place(x=50, y=400)
 
         button7 = ttk.Button(self, text="Chart", command=lambda: controller.show_frame(Chart))
-        button7.place(x=180, y=400)
+        button7.place(x=300, y=200)
 
         button8 = ttk.Button(self, text="WOA-DRR", command=lambda: controller.show_frame(WOADRR))
-        button8.place(x=180, y=450)
+        button8.place(x=300, y=300)
 
 
 def print_result(root, result):
@@ -130,54 +122,6 @@ def set_data_for_chart(result):
     art_arr.append(float(result['art']))
 
 
-class FCFS(tk.Frame):
-
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        self.config(bg='#081547')
-        label = ttk.Label(self, text="First Come First Served algorithm:", font=LARGE_FONT)
-        label.grid(row=0, column=4, padx=10, pady=10)
-
-        result = simulate_fcfs_algorithm(data)
-        set_data_for_chart(result)
-        print_result(self, result)
-
-        button1 = ttk.Button(self, text="Back", command=lambda: controller.show_frame(StartPage))
-        button1.place(x=20, y=450)
-
-
-class SJF_np(tk.Frame):
-
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        self.config(bg='#081547')
-        label = ttk.Label(self, text="SJF non-preemptive algorithm:", font=LARGE_FONT)
-        label.grid(row=0, column=4, padx=10, pady=10)
-
-        result = simulate_sjf_np_algorithm(data)
-        set_data_for_chart(result)
-        print_result(self, result)
-
-        button1 = ttk.Button(self, text="Back", command=lambda: controller.show_frame(StartPage))
-        button1.place(x=20, y=450)
-
-
-class SJF_p(tk.Frame):
-
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        self.config(bg='#081547')
-        label = ttk.Label(self, text="SJF preemptive algorithm:", font=LARGE_FONT)
-        label.grid(row=0, column=4, padx=10, pady=10)
-
-        result = simulate_sjf_p_algorithm(data)
-        set_data_for_chart(result)
-        print_result(self, result)
-
-        button1 = ttk.Button(self, text="Back", command=lambda: controller.show_frame(StartPage))
-        button1.place(x=20, y=450)
-
-
 class RR(tk.Frame):
 
     def __init__(self, parent, controller):
@@ -194,20 +138,6 @@ class RR(tk.Frame):
         button1.place(x=20, y=450)
 
 
-class PriorityNP(tk.Frame):
-
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        self.config(bg='#081547')
-        label = ttk.Label(self, text="Priority non-preemptive algorithm:", font=LARGE_FONT)
-        label.grid(row=0, column=4, padx=10, pady=10)
-
-        result = simulate_priority_np_algorithm(data)
-        set_data_for_chart(result)
-        print_result(self, result)
-
-        button1 = ttk.Button(self, text="Back", command=lambda: controller.show_frame(StartPage))
-        button1.place(x=20, y=450)
 
 
 class PriorityP(tk.Frame):
@@ -233,7 +163,7 @@ class Chart(tk.Frame):
         label = ttk.Label(self, text="Chart:", font=LARGE_FONT)
         label.grid(row=0, column=4, padx=10, pady=10)
         # Ensure WOA-DRR results are included only once
-        if len(awt_arr) == 6:  # Only add if not already present
+        if len(awt_arr) == 4:  # Only add if not already present
             from WOADRR import woa_optimize_assignment_quantum, simulate_rr_algorithm
             processes = [{"pid": row["process_id"], "burst_time": row["burst_time"]} for _, row in data.iterrows()]
             num_processors = 2
@@ -269,7 +199,7 @@ class Chart(tk.Frame):
                 'avg_turnaround_time': att_arr,
                 'avg_response_time': art_arr
             },
-            index=['fcfs', 'sjf_np', 'sjf_p', 'rr', 'priority_np', 'priority_p', 'woa_drr']
+            index=['RR', 'priority_p', 'HRR', 'RR-SJF', 'WOA-DRR']
         )
         print(df)
         def bar_plot():
@@ -333,6 +263,38 @@ class WOADRR(tk.Frame):
                 y_offset += 260
         button1 = ttk.Button(self, text="Back", command=lambda: controller.show_frame(StartPage))
         button1.place(x=20, y=y_offset)
+
+
+class HRR(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.config(bg='#081547')
+        label = ttk.Label(self, text="Hybrid Round Robin algorithm:", font=LARGE_FONT)
+        label.grid(row=0, column=4, padx=10, pady=10)
+
+        result = simulate_hrr_algorithm(data)
+        set_data_for_chart(result)
+        print_result(self, result)
+
+        button1 = ttk.Button(self, text="Back", command=lambda: controller.show_frame(StartPage))
+        button1.place(x=20, y=450)
+
+
+class RRSJF(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.config(bg='#081547')
+        label = ttk.Label(self, text="Round Robin SJF algorithm:", font=LARGE_FONT)
+        label.grid(row=0, column=4, padx=10, pady=10)
+
+        result = simulate_rrsjf_algorithm(data)
+        set_data_for_chart(result)
+        print_result(self, result)
+
+        button1 = ttk.Button(self, text="Back", command=lambda: controller.show_frame(StartPage))
+        button1.place(x=20, y=450)
 
 
 if __name__ == "__main__":

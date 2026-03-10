@@ -1,52 +1,42 @@
 ## Round Robin Algorithm
 
-This directory contains a Python implementation of the Round Robin (RR) algorithm for CPU scheduling. The `RR.py` file
-contains the implementation of the algorithm, and the `cpu_time_unit.py` file contains a utility function for
-calculating the CPU time unit.
+This directory contains Python implementations of Round Robin (RR), Hybrid Round Robin (HRR), and Round Robin SJF (RRSJF) algorithms for CPU scheduling. The `RR.py` file contains the implementation of the RR algorithm, the `Hybrid_RR.py` file contains the HRR algorithm, the `RRSJF.py` file contains the RRSJF algorithm, and the `cpu_time_unit.py` file contains a utility function for calculating the CPU time unit.
 
-### Running the Algorithm
+### Round Robin (RR)
 
-To run the RR algorithm, you can import the `simulate_rr_algorithm()` function from the `RR.py` file and pass in a
-pandas DataFrame containing the process ID and burst time for each process, as well as the time quantum. The function
-will return a dictionary containing various performance metrics for the algorithm.
+To run the RR algorithm, you can import the `simulate_rr_algorithm()` function from the `RR.py` file and pass in a pandas DataFrame containing the process ID and burst time for each process, as well as the time quantum.
+
+### Hybrid Round Robin (HRR)
+
+The HRR algorithm combines features of SJF and RR with varying time quantum. It sorts the ready queue by remaining burst time and sets the quantum to the remaining burst time of the shortest process, then performs RR with that quantum.
+
+To run the HRR algorithm, import the `simulate_hrr_algorithm()` function from the `Hybrid_RR.py` file and pass in a pandas DataFrame containing the process ID and burst time.
+
+### Round Robin SJF (RRSJF)
+
+The RRSJF algorithm uses a dynamic quantum based on the average remaining burst time of arrived processes, and schedules in SJF order.
+
+To run the RRSJF algorithm, import the `simulate_rrsjf_algorithm()` function from the `RRSJF.py` file and pass in a pandas DataFrame containing the process ID, arrival time, and burst time.
 
 ```python
 import pandas as pd
-from RR import simulate_rr_algorithm
+from RRSJF import simulate_rrsjf_algorithm
 
-# create a pandas DataFrame with process ID and burst time
+# create a pandas DataFrame with process ID, arrival time, and burst time
 data = pd.DataFrame({
     'process_id': [1, 2, 3, 4],
+    'arrival_time': [0, 1, 2, 3],
     'burst_time': [5, 4, 3, 2]
 })
 
-# run the RR algorithm on the data with a time quantum of 2
-results = simulate_rr_algorithm(data, 2)
+# run the RRSJF algorithm
+results = simulate_rrsjf_algorithm(data)
 
 # print the results
 print(results)
 ```
 
-The output will be a dictionary containing the following performance metrics:
-
-- `n`: the number of processes
-- `throughput`: the throughput of the system
-- `cpu_util`: the CPU utilization of the system
-- `awt`: the average waiting time of the processes
-- `att`: the average turnaround time of the processes
-- `art`:the average response time of the processes
-
-### CPU Time Unit
-
-The `cpu_time_unit.py` file contains a utility function for calculating the CPU time unit. The `get_cpu_time_unit()`
-function uses the `timeit.default_timer()` function to measure the time it takes to perform a simple calculation. This
-time is used as the CPU time unit for the RR algorithm.
-
-```python
-from cpu_time_unit import get_cpu_time_unit
-
-# get the CPU time unit
-cpu_time_unit = get_cpu_time_unit()
+The output will be a dictionary containing performance metrics similar to other algorithms.
 
 # print the CPU time unit
 print(cpu_time_unit)
