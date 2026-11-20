@@ -1,84 +1,80 @@
+from collections import deque
+
 from cpu_time_unit import get_cpu_time_unit
 
-idle_time = 0
 
+def simulate_rr_algorithm(data, quantum, verbose=True):
+    """Arrival-aware Round Robin on one CPU.
 
-def calculate_waiting_time(processes, n, burst_t, waiting_t, quantum):
-    global idle_time
-    # Copy the burst time into remaining burst
-    remain_bt = burst_t.copy()
+    - A process joins the ready queue at its arrival time (ties: process order).
+    - A preempted process goes behind the processes that arrived while it was running.
+    - The CPU idles when no process is ready.
+    - waiting = completion - arrival - burst, turnaround = completion - arrival,
+      response = first CPU time - arrival.
+    If `data` has no `arrival_time` column, every process is assumed to arrive at t=0.
+    """
+    burst = data['burst_time'].tolist()
+    n = len(burst)
+    arrival = data['arrival_time'].tolist() if 'arrival_time' in data.columns else [0] * n
 
+    remaining = burst.copy()
+    first_run = [None] * n
+    completion = [0] * n
+
+    pending = sorted(range(n), key=lambda i: (arrival[i], i))  # not yet arrived
+    nxt = 0
+    ready = deque()
     t = 0
+    idle_time = 0
+    done = 0
 
-    while True:
-        done = True
-        for i in range(n):
-            if remain_bt[i] > 0:
-                done = False
-                if remain_bt[i] > quantum:
-                    t += quantum
-                    remain_bt[i] -= quantum
+    def admit(now):
+        nonlocal nxt
+        while nxt < n and arrival[pending[nxt]] <= now:
+            ready.append(pending[nxt])
+            nxt += 1
 
-                else:
-                    t += remain_bt[i]
-                    waiting_t[i] = t - burst_t[i]
-                    remain_bt[i] = 0
+    while done < n:
+        admit(t)
+        if not ready:
+            # CPU idle until the next process arrives
+            idle_time += arrival[pending[nxt]] - t
+            t = arrival[pending[nxt]]
+            admit(t)
 
-            if waiting_t[i] < 0:
-                idle_time += abs(waiting_t[i])
-                waiting_t[i] = 0
+        i = ready.popleft()
+        if first_run[i] is None:
+            first_run[i] = t
 
-        # If all processes are done
-        if done:
-            break
+        run = min(quantum, remaining[i])
+        t += run
+        remaining[i] -= run
+        admit(t)  # arrivals during this slice queue ahead of the preempted process
 
-
-def calculate_turnaround_time(processes, n, burst_t, waiting_t, turn_around_t):
-    for i in range(n):
-        turn_around_t[i] = burst_t[i] + waiting_t[i]
-
-
-def calculate_response_time(n, burst_t, quantum):
-    response_t = 0
-    response_t_arr = []
-    for i in range(n):
-        if i == 0:
-            response_t = 0
+        if remaining[i] > 0:
+            ready.append(i)
         else:
-            if quantum >= burst_t[i - 1]:
-                response_t += burst_t[i - 1]
-                response_t_arr.append(response_t)
-            else:
-                response_t += quantum
-                response_t_arr.append(response_t)
-    return (sum(response_t_arr) * get_cpu_time_unit()) / n
+            completion[i] = t
+            done += 1
 
+    turnaround = [completion[i] - arrival[i] for i in range(n)]
+    waiting = [turnaround[i] - burst[i] for i in range(n)]
+    response = [first_run[i] - arrival[i] for i in range(n)]
 
-def simulate_rr_algorithm(data, quantum):
-    processes = data['process_id']
-    n = len(processes)
-    burst_time = data['burst_time']
-    waiting_t = [0] * n
-    turn_around_t = [0] * n
+    unit = get_cpu_time_unit()
+    total_burst = sum(burst)
+    busy_window = total_burst + idle_time
+    cpu_utilization = total_burst / busy_window if busy_window > 0 else 0
+    throughput = n / (busy_window * unit) if busy_window > 0 else 0
+    average_waiting_time = sum(waiting) * unit / n
+    average_turnaround_time = sum(turnaround) * unit / n
+    average_response_time = sum(response) * unit / n
 
-    calculate_waiting_time(processes, n, burst_time, waiting_t, quantum)
-    calculate_turnaround_time(processes, n, burst_time, waiting_t, turn_around_t)
-
-    total_waiting_t = sum(waiting_t)
-    total_turn_around_t = sum(turn_around_t)
-    total_burst_t = sum(burst_time)
-    cpu_utilization = total_burst_t / (total_burst_t + idle_time)
-    throughput = n / ((total_burst_t + idle_time) * get_cpu_time_unit())
-    average_waiting_time = (total_waiting_t * get_cpu_time_unit()) / n
-    average_turnaround_time = (total_turn_around_t * get_cpu_time_unit()) / n
-    avg_response_t = calculate_response_time(n, burst_time, quantum)
-
-    print('RR preemptive algorithm results: ')
-    print("Throughput = %.4f" % throughput)
-    print(f"CPU utilization = {'%.2f' % cpu_utilization}")
-    print("Average waiting time = %.4f " % average_waiting_time)
-    print("Average turn around time = %.4f " % average_turnaround_time)
-    print("Average response time = %.4f \n" % avg_response_t)
+    if verbose:
+        print('RR preemptive algorithm results: ')
+        print("Average waiting time = %.4f " % average_waiting_time)
+        print("Average turn around time = %.4f " % average_turnaround_time)
+        print("Average response time = %.4f \n" % average_response_time)
 
     return {
         'n': str(n),
@@ -86,5 +82,5 @@ def simulate_rr_algorithm(data, quantum):
         'cpu_util': "%.2f" % cpu_utilization,
         'awt': "%.4f" % average_waiting_time,
         'att': "%.4f" % average_turnaround_time,
-        'art': "%.4f" % avg_response_t
+        'art': "%.4f" % average_response_time
     }
