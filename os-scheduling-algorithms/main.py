@@ -17,7 +17,7 @@ if __name__ == "__main__":
     data = pd.read_csv(os.path.join(BASE_DIR, "db", "data_set.csv"))
 
     # round robin (fixed quantum)
-    simulate_rr_algorithm(data, 1)
+    simulate_rr_algorithm(data, 10)
 
     # hybrid round robin
     simulate_hrr_algorithm(data)

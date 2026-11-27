@@ -62,7 +62,7 @@ ALGOS = [
     Algo("rr", "Round Robin", "RR",
          "Each process gets a fixed time quantum in turn. Honours arrival times.",
          lambda d, p: simulate_rr_algorithm(d, p["quantum"], verbose=False),
-         params=[dict(name="quantum", label="Time quantum", type="int", default=1, low=1, high=1000)]),
+         params=[dict(name="quantum", label="Time quantum", type="int", default=10, low=1, high=1000)]),
     Algo("hrr", "Hybrid Round Robin", "HRR",
          "Per cycle the quantum is the smallest remaining burst among arrived processes, "
          "which are served shortest first.",
