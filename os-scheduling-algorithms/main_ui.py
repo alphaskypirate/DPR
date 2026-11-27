@@ -73,12 +73,11 @@ ALGOS = [
          lambda d, p: simulate_rrsjf_algorithm(d)),
     Algo("woa", "WOA-DRR (proposed)", "WOA-DRR",
          "Whale Optimization Algorithm searches a time quantum for every process (and "
-         "optionally the processor assignment and ready-queue order). Fitness = average "
-         "waiting time + weight x average response time. Takes about 20-60 seconds.",
-         lambda d, p: run_woa_drr(d, num_processors=p["processors"], response_weight=p["weight"],
+         "optionally the processor assignment and ready-queue order). The fitness is the mean of "
+         "average waiting, turnaround and response time. Takes about 20-60 seconds.",
+         lambda d, p: run_woa_drr(d, num_processors=p["processors"],
                                   optimize_order=p["order"], use_arrival=p["arrival"]),
          params=[dict(name="processors", label="Processors", type="int", default=1, low=1, high=4),
-                 dict(name="weight", label="Response-time weight", type="float", default=0.5),
                  dict(name="order", label="Also optimize ready-queue order", type="bool", default=False),
                  dict(name="arrival", label="Use arrival times", type="bool", default=True)],
          info=_woa_info),

@@ -26,4 +26,4 @@ if __name__ == "__main__":
     simulate_rrsjf_algorithm(data)
 
     # WOA-optimized dynamic RR (per-process quantum), 1 processor like the others
-    run_woa_drr(data, num_processors=1, use_arrival=True, response_weight=0.5, verbose=True)
+    run_woa_drr(data, num_processors=1, use_arrival=True, verbose=True)

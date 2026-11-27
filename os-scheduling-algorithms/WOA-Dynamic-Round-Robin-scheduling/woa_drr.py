@@ -9,11 +9,9 @@ Positions are moved with the standard Whale Optimization Algorithm (Mirjalili & 
 shrinking encirclement, spiral bubble-net attack, and random-whale exploration.
 
 With use_arrival / arrivals the simulation honours arrival times (see simulate_drr).
-Fitness = average waiting time + response_weight * average response time over ALL processes
-(plus optional context-switch cost), so it works the same for 1 or P processors and compares
-directly against plain RR. response_weight=0 optimizes waiting time only (the optimizer then
-lets most processes run to completion, which wrecks response time); larger values keep
-quantums small enough that processes get the CPU quickly, the reason to use RR at all.
+Fitness = mean of the three reported metrics (average waiting time, average turnaround time
+and average response time) over ALL processes, so the search never trades one metric away
+completely and plain RR can be compared with WOA-DRR on exactly the same objective.
 
 Seeding (seed_population=True): part of the initial population is filled with the best
 plain-RR solutions (fixed quantum scanned over every integer value, round-robin or
@@ -114,6 +112,11 @@ def evaluate(assignment, quantums, bursts, num_processors, context_switch=0.0, o
             "total_burst": float(sum(bursts))}
 
 
+def fitness_of(metrics):
+    """Objective minimized by WOA-DRR: mean of average waiting, turnaround and response time."""
+    return (metrics["awt"] + metrics["att"] + metrics["art"]) / 3.0
+
+
 def _decode(x, n, num_processors, q_min, q_max, optimize_order):
     assignment = np.minimum(np.floor(x[:n]).astype(int), num_processors - 1).tolist()
     quantums = np.clip(np.rint(np.exp(x[n:2 * n])), q_min, q_max).astype(int).tolist()
@@ -128,8 +131,7 @@ def _encode(assignment, quantums, order, n, optimize_order):
     return np.concatenate(parts)
 
 
-def _seeds(bursts, num_processors, q_min, q_max, context_switch, optimize_order, arrivals=None,
-           response_weight=1.0, top_k=5):
+def _seeds(bursts, num_processors, q_min, q_max, context_switch, optimize_order, arrivals=None, top_k=5):
     """Best plain-RR solutions as starting whales (scan every integer quantum)."""
     n = len(bursts)
     dealt = [i % num_processors for i in range(n)]
@@ -145,14 +147,14 @@ def _seeds(bursts, num_processors, q_min, q_max, context_switch, optimize_order,
             continue
         for q in range(q_min, q_max + 1):
             m = evaluate(assign, [q] * n, bursts, num_processors, context_switch, None, arrivals)
-            candidates.append((m["awt"] + response_weight * m["art"], assign, q))
+            candidates.append((fitness_of(m), assign, q))
     candidates.sort(key=lambda c: c[0])
     return [_encode(a, [q] * n, None, n, optimize_order) for _, a, q in candidates[:top_k]]
 
 
 def woa_optimize(bursts, num_processors=1, q_min=1, q_max=None, population_size=40,
                  max_iter=150, context_switch=0.0, random_seed=None, verbose=False,
-                 seed_population=True, optimize_order=False, arrivals=None, response_weight=1.0):
+                 seed_population=True, optimize_order=False, arrivals=None):
     """Run WOA. Returns (assignment, quantums, order, best_fitness, progress)."""
     bursts = [float(b) for b in bursts]
     n = len(bursts)
@@ -170,12 +172,12 @@ def woa_optimize(bursts, num_processors=1, q_min=1, q_max=None, population_size=
     def cost(x):
         a, q, o = _decode(x, n, num_processors, q_min, q_max, optimize_order)
         m = evaluate(a, q, bursts, num_processors, context_switch, o, arrivals)
-        return m["awt"] + response_weight * m["art"]
+        return fitness_of(m)
 
     X = lb + rng.random((population_size, dims)) * (ub - lb)
     if seed_population:
         for k, s in enumerate(_seeds(bursts, num_processors, q_min, q_max, context_switch,
-                                     optimize_order, arrivals, response_weight)[:population_size]):
+                                     optimize_order, arrivals)[:population_size]):
             X[k] = np.clip(s, lb, ub)
     fit = np.array([cost(x) for x in X])
     best_i = int(fit.argmin())
@@ -202,7 +204,7 @@ def woa_optimize(bursts, num_processors=1, q_min=1, q_max=None, population_size=
                 best_x, best_f = X[i].copy(), float(fit[i])
         progress.append(best_f)
         if verbose and t % 10 == 0:
-            print(f"Iteration {t}: best fitness (awt + w*art) = {best_f:.4f}")
+            print(f"Iteration {t}: best fitness (mean of AWT, ATT, ART) = {best_f:.4f}")
 
     assignment, quantums, order = _decode(best_x, n, num_processors, q_min, q_max, optimize_order)
     return assignment, quantums, order, best_f, progress
@@ -210,15 +212,14 @@ def woa_optimize(bursts, num_processors=1, q_min=1, q_max=None, population_size=
 
 def run_woa_drr(data, num_processors=1, q_min=1, q_max=None, population_size=40, max_iter=150,
                 context_switch=0.0, random_seed=42, verbose=False,
-                seed_population=True, optimize_order=False, use_arrival=False, response_weight=1.0):
+                seed_population=True, optimize_order=False, use_arrival=False):
     """Optimize, then report combined metrics in the same format as the other simulators."""
     bursts = data["burst_time"].tolist()
     n = len(bursts)
     arrivals = [float(a) for a in data["arrival_time"]] if use_arrival else None
     assignment, quantums, order, _, progress = woa_optimize(
         bursts, num_processors, q_min, q_max, population_size, max_iter,
-        context_switch, random_seed, False, seed_population, optimize_order, arrivals,
-        response_weight)
+        context_switch, random_seed, False, seed_population, optimize_order, arrivals)
     m = evaluate(assignment, quantums, [float(b) for b in bursts], num_processors, context_switch, order, arrivals)
     u = get_cpu_time_unit()
     busy = m["makespan"] * num_processors
